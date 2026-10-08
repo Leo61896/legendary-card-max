@@ -1,0 +1,1645 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>無敵麥克斯 - ORIGIN LEGEND | 3D 鐳射反光傳奇卡牌</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Noto+Serif+TC:wght@600;700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+  <!-- html2canvas CDN for PNG Export -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <style>
+    :root {
+      --gold-primary: #f5d061;
+      --gold-deep: #b38728;
+      --gold-light: #fff3a8;
+      --gold-dark: #6a4e10;
+      --obsidian-bg: #0b0c10;
+      --panel-bg: rgba(18, 20, 29, 0.78);
+      --panel-border: rgba(245, 208, 97, 0.28);
+      --card-radius: 18px;
+
+      /* Dynamic Holo Variables */
+      --rx: 0deg;
+      --ry: 0deg;
+      --mx: 50%;
+      --my: 50%;
+      --foil-angle: 135deg;
+      --foil-opacity: 0.85;
+      --glare-opacity: 0.35;
+      --scale: 1;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      min-height: 100vh;
+      background: radial-gradient(circle at 50% 20%, #1e1b29 0%, #0d0e15 55%, #050508 100%);
+      color: #e6e6e6;
+      font-family: 'Rajdhani', 'Noto Serif TC', serif;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    /* Ambient Starlight Background Particles */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image: 
+        radial-gradient(1.5px 1.5px at 20px 30px, #f5d061, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 80px 120px, #ffffff, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 150px 70px, #f5d061, rgba(0,0,0,0)),
+        radial-gradient(1.5px 1.5px at 220px 180px, #a88434, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 310px 260px, #ffffff, rgba(0,0,0,0));
+      background-size: 350px 350px;
+      opacity: 0.25;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Main Container Layout */
+    .app-layout {
+      width: 100%;
+      max-width: 1300px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 3.5rem;
+      padding: 2.5rem 2rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* =========================================================
+       STAGE & 3D CARD WRAPPER
+       ========================================================= */
+    .stage-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      perspective: 1200px;
+    }
+
+    .card-scene {
+      width: min(88vw, 380px);
+      aspect-ratio: 63 / 88;
+      position: relative;
+      cursor: grab;
+      touch-action: none;
+      filter: drop-shadow(0 25px 40px rgba(0, 0, 0, 0.75)) drop-shadow(0 0 25px rgba(245, 208, 97, 0.2));
+      transition: filter 0.3s ease;
+    }
+
+    .card-scene:active {
+      cursor: grabbing;
+    }
+
+    .card-3d {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      border-radius: var(--card-radius);
+      transform-style: preserve-3d;
+      transform: rotateX(var(--rx)) rotateY(var(--ry)) scale(var(--scale));
+      transition: transform 0.15s cubic-bezier(0.2, 0, 0.3, 1);
+      will-change: transform;
+    }
+
+    .card-3d.smooth-return {
+      transition: transform 0.65s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    .card-3d.flipped {
+      transform: rotateX(var(--rx)) rotateY(calc(var(--ry) + 180deg)) scale(var(--scale)) !important;
+    }
+
+    /* FRONT & BACK FACES */
+    .card-face {
+      position: absolute;
+      inset: 0;
+      border-radius: var(--card-radius);
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      overflow: hidden;
+      border: 2px solid #caa34d;
+      box-shadow: inset 0 0 0 2px #443209, inset 0 0 16px rgba(0, 0, 0, 0.85);
+    }
+
+    /* =========================================================
+       CARD FRONT: GOLD ULTRA STYLE
+       ========================================================= */
+    .card-front {
+      background: linear-gradient(145deg, #181611 0%, #0d0d0f 45%, #1d1912 100%);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      padding: 12px 14px 10px 14px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Metallic Relief Card Border Inlay */
+    .card-front::before {
+      content: "";
+      position: absolute;
+      inset: 5px;
+      border: 1.5px solid transparent;
+      border-image: linear-gradient(135deg, var(--gold-light), var(--gold-deep), #5c430c, var(--gold-primary)) 1;
+      pointer-events: none;
+      z-index: 2;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+    }
+
+    /* Top Corner Runic Accents */
+    .corner-accent {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border: 2px solid var(--gold-primary);
+      z-index: 5;
+      pointer-events: none;
+    }
+    .corner-tl { top: 9px; left: 9px; border-right: none; border-bottom: none; }
+    .corner-tr { top: 9px; right: 9px; border-left: none; border-bottom: none; }
+    .corner-bl { bottom: 9px; left: 9px; border-right: none; border-top: none; }
+    .corner-br { bottom: 9px; right: 9px; border-left: none; border-top: none; }
+
+    /* CARD HEADER */
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      margin-bottom: 7px;
+      position: relative;
+      z-index: 10;
+    }
+
+    .badge-class {
+      background: linear-gradient(90deg, #443209, #8f6c1e);
+      border: 1px solid var(--gold-primary);
+      color: #fff;
+      font-size: clamp(8px, 2.3vw, 9.5px);
+      font-weight: 700;
+      letter-spacing: 1px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.6);
+      white-space: nowrap;
+    }
+
+    .header-title-box {
+      flex: 1;
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .card-title {
+      font-family: 'Noto Serif TC', serif;
+      font-size: clamp(16px, 4.4vw, 20px);
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      background: linear-gradient(180deg, #ffffff 0%, var(--gold-light) 40%, var(--gold-primary) 70%, var(--gold-deep) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.9));
+      outline: none;
+    }
+
+    .card-hp-box {
+      display: flex;
+      align-items: baseline;
+      gap: 2px;
+      font-family: 'Cinzel', serif;
+      font-weight: 900;
+      color: var(--gold-light);
+      text-shadow: 0 0 8px rgba(245, 208, 97, 0.7);
+    }
+    .hp-label {
+      font-size: clamp(9px, 2.5vw, 11px);
+      font-weight: 700;
+      color: #e5be59;
+    }
+    .hp-value {
+      font-size: clamp(15px, 4.2vw, 18px);
+      letter-spacing: 0.5px;
+      outline: none;
+    }
+
+    .attr-symbol {
+      width: clamp(26px, 7vw, 30px);
+      height: clamp(26px, 7vw, 30px);
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fffdf0 0%, #ffde59 40%, #c48b11 85%, #634300 100%);
+      border: 1.8px solid #fff;
+      box-shadow: 0 0 10px rgba(255, 222, 89, 0.8), inset 0 0 4px rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: clamp(12px, 3.2vw, 14px);
+      color: #3b2802;
+      font-family: 'Noto Serif TC', serif;
+      text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
+      flex-shrink: 0;
+    }
+
+    /* ILLUSTRATION BOX */
+    .art-container {
+      width: 100%;
+      aspect-ratio: 16 / 11;
+      border-radius: 9px;
+      position: relative;
+      overflow: hidden;
+      background: #06070a;
+      border: 1.8px solid var(--gold-deep);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.85), inset 0 0 20px rgba(0, 0, 0, 0.95);
+      z-index: 10;
+      margin-bottom: 7px;
+    }
+
+    .art-container img, 
+    .art-container svg {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.4s ease;
+    }
+
+    .card-scene:hover .art-container img,
+    .card-scene:hover .art-container svg {
+      transform: scale(1.03);
+    }
+
+    .art-frame-gold-accent {
+      position: absolute;
+      inset: 0;
+      border: 1px solid rgba(245, 208, 97, 0.4);
+      pointer-events: none;
+      background: radial-gradient(circle at 50% 50%, transparent 60%, rgba(20, 15, 6, 0.5) 100%);
+    }
+
+    .art-sub-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px;
+      font-size: 8px;
+      color: #caa34d;
+      letter-spacing: 0.5px;
+      margin-bottom: 5px;
+      font-weight: 600;
+      z-index: 10;
+    }
+
+    /* CARD ABILITY SECTION */
+    .abilities-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      z-index: 10;
+      justify-content: center;
+    }
+
+    /* PASSIVE TRAIT BOX */
+    .trait-box {
+      background: rgba(30, 24, 15, 0.85);
+      border-left: 3px solid var(--gold-primary);
+      border-radius: 4px;
+      padding: 4px 7px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(2px);
+    }
+    .trait-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 2px;
+    }
+    .trait-badge {
+      background: linear-gradient(135deg, #c7952a, #f7d568);
+      color: #171104;
+      font-size: 8px;
+      font-weight: 900;
+      padding: 1px 4px;
+      border-radius: 3px;
+      text-transform: uppercase;
+    }
+    .trait-name {
+      font-size: clamp(10px, 2.7vw, 11.5px);
+      font-weight: 800;
+      color: var(--gold-light);
+      letter-spacing: 0.5px;
+      outline: none;
+    }
+    .trait-desc {
+      font-size: clamp(8px, 2.2vw, 9.5px);
+      line-height: 1.35;
+      color: #d8d4c7;
+      outline: none;
+    }
+
+    /* SKILL / ATTACK ROW */
+    .skill-card {
+      background: rgba(18, 17, 23, 0.82);
+      border: 1px solid rgba(202, 163, 77, 0.35);
+      border-radius: 5px;
+      padding: 5px 8px;
+      position: relative;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+    }
+
+    .skill-card.ultimate-skill {
+      background: linear-gradient(135deg, rgba(38, 28, 11, 0.9) 0%, rgba(20, 16, 26, 0.9) 100%);
+      border: 1.2px solid var(--gold-primary);
+      box-shadow: 0 0 12px rgba(245, 208, 97, 0.25), inset 0 0 8px rgba(245, 208, 97, 0.1);
+    }
+
+    .skill-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+      margin-bottom: 2px;
+    }
+
+    .energy-cost {
+      display: flex;
+      align-items: center;
+      gap: 2.5px;
+    }
+    .energy-orb {
+      width: clamp(11px, 2.9vw, 13px);
+      height: clamp(11px, 2.9vw, 13px);
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fff, #ffd24d 50%, #996e08 100%);
+      box-shadow: 0 0 5px rgba(255, 210, 77, 0.9);
+      display: inline-block;
+    }
+
+    .skill-name {
+      flex: 1;
+      font-size: clamp(11px, 2.9vw, 13px);
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: 0.3px;
+      padding-left: 4px;
+      outline: none;
+    }
+
+    .ultimate-skill .skill-name {
+      background: linear-gradient(90deg, #fff 0%, #ffea88 50%, #f5d061 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 900;
+    }
+
+    .skill-dmg {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(14px, 3.8vw, 16px);
+      font-weight: 900;
+      color: var(--gold-light);
+      text-shadow: 0 0 6px rgba(245, 208, 97, 0.8);
+      outline: none;
+    }
+
+    .skill-desc {
+      font-size: clamp(8px, 2.2vw, 9.2px);
+      color: #c9c4b7;
+      line-height: 1.35;
+      outline: none;
+    }
+
+    /* FOOTER MECHANICS (Weakness, Resistance, Retreat) */
+    .card-mechanics {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid rgba(202, 163, 77, 0.4);
+      padding-top: 4px;
+      margin-top: 4px;
+      font-size: clamp(7.5px, 2vw, 8.8px);
+      color: #c5a662;
+      z-index: 10;
+    }
+
+    .mech-item {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .mech-label {
+      color: #8c7340;
+      font-weight: 700;
+    }
+    .mech-val {
+      font-weight: 800;
+      color: #ede2c5;
+      outline: none;
+    }
+
+    /* COPYRIGHT & AUTHENTICITY STAMP */
+    .card-footer {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-top: 3px;
+      padding-top: 2px;
+      font-size: clamp(6.5px, 1.8vw, 7.8px);
+      color: #8a7852;
+      z-index: 10;
+    }
+
+    .footer-left {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    /* Genuine TCG Security Hologram Seal */
+    .holo-security-seal {
+      width: clamp(14px, 3.8vw, 17px);
+      height: clamp(14px, 3.8vw, 17px);
+      background: linear-gradient(135deg, #e6c875, #ffffff, #aa8222, #7a5a10, #ffd978);
+      background-size: 300% 300%;
+      border-radius: 2px;
+      border: 0.8px solid #caa34d;
+      box-shadow: 0 0 6px rgba(245, 208, 97, 0.7);
+      animation: shiftSeal 4s ease infinite alternate;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .holo-security-seal::after {
+      content: "★";
+      font-size: 8px;
+      color: #3d2d06;
+      opacity: 0.85;
+    }
+
+    @keyframes shiftSeal {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 100% 50%; }
+    }
+
+    /* =========================================================
+       DYNAMIC HOLOGRAPHIC FOIL & GLARE OVERLAYS
+       ========================================================= */
+    .holo-foil-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 20;
+      border-radius: var(--card-radius);
+      opacity: var(--foil-opacity);
+      transition: opacity 0.25s ease;
+      mix-blend-mode: color-dodge;
+    }
+
+    .glare-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 25;
+      border-radius: var(--card-radius);
+      mix-blend-mode: overlay;
+      opacity: var(--glare-opacity);
+      background: radial-gradient(
+        circle 220px at var(--mx) var(--my),
+        rgba(255, 255, 255, 0.95) 0%,
+        rgba(255, 255, 255, 0.4) 30%,
+        rgba(255, 255, 255, 0) 75%
+      );
+      transition: opacity 0.2s ease;
+    }
+
+    /* 1. Gold Ultra 黑金浮雕 (預設) */
+    .style-gold-ultra .holo-foil-layer {
+      background-image: 
+        repeating-linear-gradient(
+          var(--foil-angle),
+          rgba(255, 230, 120, 0.15) 0px,
+          rgba(255, 230, 120, 0.15) 2px,
+          transparent 2px,
+          transparent 6px
+        ),
+        radial-gradient(
+          circle 300px at var(--mx) var(--my),
+          rgba(255, 235, 140, 0.9) 0%,
+          rgba(212, 160, 23, 0.6) 35%,
+          rgba(92, 59, 10, 0.3) 65%,
+          transparent 90%
+        ),
+        linear-gradient(
+          calc(var(--foil-angle) + 45deg),
+          rgba(255, 215, 0, 0.2) 0%,
+          rgba(255, 255, 255, 0.4) 50%,
+          rgba(218, 165, 32, 0.2) 100%
+        );
+      mix-blend-mode: color-dodge;
+      filter: contrast(1.3) brightness(1.15);
+    }
+
+    /* 2. Cosmos Holo 宇宙彩虹 */
+    .style-cosmos .holo-foil-layer {
+      background-image: 
+        radial-gradient(circle 4px at 20% 30%, #fff, transparent),
+        radial-gradient(circle 3px at 75% 15%, #ffd2ff, transparent),
+        radial-gradient(circle 5px at 60% 70%, #d2ffff, transparent),
+        radial-gradient(circle 4px at 30% 80%, #ffffd2, transparent),
+        conic-gradient(from var(--foil-angle) at var(--mx) var(--my),
+          #ff0055 0deg, #ff9900 60deg, #ffee00 120deg, 
+          #00ff66 180deg, #00ccff 240deg, #9900ff 300deg, #ff0055 360deg);
+      mix-blend-mode: color-dodge;
+      filter: contrast(1.4) saturate(1.8) brightness(1.1);
+    }
+
+    /* 3. Rainbow Secret 極光全息 */
+    .style-rainbow .holo-foil-layer {
+      background-image: 
+        linear-gradient(
+          var(--foil-angle),
+          rgba(255, 0, 0, 0.6) 0%,
+          rgba(255, 154, 0, 0.6) 15%,
+          rgba(240, 240, 0, 0.6) 30%,
+          rgba(0, 255, 100, 0.6) 50%,
+          rgba(0, 180, 255, 0.6) 70%,
+          rgba(150, 0, 255, 0.6) 85%,
+          rgba(255, 0, 128, 0.6) 100%
+        ),
+        repeating-linear-gradient(
+          calc(var(--foil-angle) + 90deg),
+          transparent 0px,
+          transparent 4px,
+          rgba(255, 255, 255, 0.3) 4px,
+          rgba(255, 255, 255, 0.3) 6px
+        );
+      mix-blend-mode: color-dodge;
+      filter: brightness(1.2) contrast(1.3);
+    }
+
+    /* 4. Silver Phantom 冷冽銀鏡 */
+    .style-silver .holo-foil-layer {
+      background-image: 
+        linear-gradient(
+          var(--foil-angle),
+          rgba(255, 255, 255, 0.8) 0%,
+          rgba(180, 210, 240, 0.3) 25%,
+          rgba(255, 255, 255, 0.9) 50%,
+          rgba(200, 180, 240, 0.3) 75%,
+          rgba(255, 255, 255, 0.8) 100%
+        ),
+        radial-gradient(circle 260px at var(--mx) var(--my), rgba(220, 240, 255, 0.6) 0%, transparent 80%);
+      mix-blend-mode: hard-light;
+      filter: contrast(1.5) brightness(1.1);
+    }
+
+    /* =========================================================
+       CARD BACK FACE (TCG LEGENDARY EMBLEM)
+       ========================================================= */
+    .card-back {
+      background: radial-gradient(circle at 50% 50%, #201a2f 0%, #0d0a18 60%, #05040a 100%);
+      transform: rotateY(180deg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      position: relative;
+    }
+
+    .card-back::before {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      border: 2px solid #947127;
+      border-radius: 12px;
+      box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.9);
+      pointer-events: none;
+    }
+
+    .back-emblem-wrap {
+      width: 170px;
+      height: 170px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .back-circle {
+      position: absolute;
+      border-radius: 50%;
+      border: 1.5px dashed #caa34d;
+      animation: rotateRing 25s linear infinite;
+    }
+    .back-circle.c1 { width: 160px; height: 160px; }
+    .back-circle.c2 { width: 120px; height: 120px; border: 2px solid #f5d061; animation-direction: reverse; animation-duration: 18s; }
+    .back-circle.c3 { width: 80px; height: 80px; border: 1.5px solid #fff; }
+
+    @keyframes rotateRing {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .back-title {
+      font-family: 'Cinzel', serif;
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 2.5px;
+      color: var(--gold-primary);
+      text-shadow: 0 0 10px rgba(245, 208, 97, 0.8);
+      margin-top: 18px;
+    }
+    .back-sub {
+      font-size: 8.5px;
+      letter-spacing: 3px;
+      color: #9c8a66;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+
+    /* =========================================================
+       CONTROL PANEL (FROSTED GLASS)
+       ========================================================= */
+    .control-panel {
+      flex: 1;
+      max-width: 480px;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 20px;
+      padding: 1.8rem;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65), 0 0 30px rgba(245, 208, 97, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .panel-header {
+      border-bottom: 1px solid rgba(245, 208, 97, 0.2);
+      padding-bottom: 0.8rem;
+    }
+
+    .panel-title {
+      font-family: 'Noto Serif TC', serif;
+      font-size: 1.35rem;
+      font-weight: 900;
+      background: linear-gradient(90deg, #fff 0%, var(--gold-light) 60%, var(--gold-primary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-subtitle {
+      font-size: 0.82rem;
+      color: #a8a59b;
+      margin-top: 3px;
+    }
+
+    /* Section block */
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+
+    .group-label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--gold-light);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Style Selector Buttons Grid */
+    .foil-style-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.5rem;
+    }
+
+    .btn-foil {
+      background: rgba(28, 30, 42, 0.85);
+      border: 1px solid rgba(245, 208, 97, 0.25);
+      color: #c9c7be;
+      padding: 0.55rem 0.7rem;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      text-align: left;
+    }
+
+    .btn-foil:hover {
+      background: rgba(45, 48, 68, 0.9);
+      border-color: var(--gold-primary);
+      color: #fff;
+    }
+
+    .btn-foil.active {
+      background: linear-gradient(135deg, rgba(74, 56, 17, 0.95), rgba(30, 25, 45, 0.95));
+      border: 1.5px solid var(--gold-primary);
+      color: var(--gold-light);
+      box-shadow: 0 0 12px rgba(245, 208, 97, 0.35);
+    }
+
+    .foil-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .ind-gold { background: linear-gradient(135deg, #ffd700, #b8860b); }
+    .ind-cosmos { background: conic-gradient(#f05, #0cf, #ff0, #f05); }
+    .ind-rainbow { background: linear-gradient(90deg, #ff0055, #00ffcc, #ffee00); }
+    .ind-silver { background: linear-gradient(135deg, #ffffff, #8899aa); }
+
+    /* Sliders */
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+    .custom-range {
+      flex: 1;
+      accent-color: var(--gold-primary);
+      height: 5px;
+      border-radius: 4px;
+      background: #2a2d3d;
+      cursor: pointer;
+    }
+    .slider-val {
+      font-size: 0.8rem;
+      font-family: monospace;
+      color: #cfcbbe;
+      min-width: 36px;
+    }
+
+    /* Action Buttons */
+    .action-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.55rem;
+    }
+
+    .btn-action {
+      background: linear-gradient(135deg, #2a2c3a, #1a1b24);
+      border: 1px solid rgba(245, 208, 97, 0.3);
+      color: #e5e2d6;
+      font-family: inherit;
+      font-size: 0.84rem;
+      font-weight: 700;
+      padding: 0.65rem 0.8rem;
+      border-radius: 9px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-action:hover {
+      background: linear-gradient(135deg, #383b50, #242634);
+      border-color: var(--gold-primary);
+      color: #fff;
+      transform: translateY(-1.5px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    .btn-action:active {
+      transform: translateY(0);
+    }
+
+    .btn-primary-action {
+      grid-column: span 2;
+      background: linear-gradient(135deg, #996e14, #d4a737, #996e14);
+      border: 1.2px solid #fff;
+      color: #1a1202;
+      font-weight: 900;
+      font-size: 0.95rem;
+      box-shadow: 0 4px 15px rgba(212, 167, 55, 0.4);
+    }
+
+    .btn-primary-action:hover {
+      background: linear-gradient(135deg, #b08119, #ebd068, #b08119);
+      color: #0d0800;
+      box-shadow: 0 6px 20px rgba(235, 208, 104, 0.6);
+    }
+
+    /* Hints & Editable Tooltip */
+    .tips-box {
+      background: rgba(245, 208, 97, 0.08);
+      border-left: 3px solid var(--gold-primary);
+      border-radius: 6px;
+      padding: 0.6rem 0.8rem;
+      font-size: 0.78rem;
+      line-height: 1.45;
+      color: #ded8c5;
+    }
+
+    /* Focus outline for inline editable text */
+    [contenteditable="true"] {
+      border-radius: 2px;
+      transition: background 0.2s ease, outline 0.2s ease;
+    }
+    [contenteditable="true"]:hover {
+      outline: 1px dashed rgba(245, 208, 97, 0.6);
+      background: rgba(245, 208, 97, 0.1);
+      cursor: text;
+    }
+    [contenteditable="true"]:focus {
+      outline: 1.5px solid var(--gold-primary);
+      background: rgba(245, 208, 97, 0.2);
+    }
+
+    /* =========================================================
+       RESPONSIVE BREAKPOINTS (RWD)
+       ========================================================= */
+    /* Tablet (768px - 1023px) */
+    @media (max-width: 1023px) {
+      .app-layout {
+        gap: 2rem;
+        padding: 1.8rem 1.2rem;
+      }
+      .card-scene {
+        width: min(85vw, 340px);
+      }
+      .control-panel {
+        max-width: 420px;
+        padding: 1.4rem;
+      }
+    }
+
+    /* Mobile (< 768px): Vertical Stack */
+    @media (max-width: 767px) {
+      body {
+        justify-content: flex-start;
+      }
+      .app-layout {
+        flex-direction: column;
+        gap: 1.8rem;
+        padding: 1.2rem 1rem 3rem 1rem;
+      }
+      .stage-wrapper {
+        width: 100%;
+        perspective: 900px;
+      }
+      .card-scene {
+        width: min(88vw, 325px);
+      }
+      .control-panel {
+        width: 100%;
+        max-width: 100%;
+        padding: 1.2rem;
+      }
+      .foil-style-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      .action-row {
+        grid-template-columns: 1fr;
+      }
+      .btn-primary-action {
+        grid-column: span 1;
+      }
+    }
+  </style>
+</head>
+<body class="style-gold-ultra">
+
+  <main class="app-layout">
+    
+    <!-- LEFT: 3D CARD STAGE -->
+    <section class="stage-wrapper">
+      <div class="card-scene" id="cardScene">
+        <div class="card-3d" id="card3D">
+          
+          <!-- FRONT FACE -->
+          <div class="card-face card-front" id="cardFrontTarget">
+            
+            <!-- Corner Filigrees -->
+            <div class="corner-accent corner-tl"></div>
+            <div class="corner-accent corner-tr"></div>
+            <div class="corner-accent corner-bl"></div>
+            <div class="corner-accent corner-br"></div>
+
+            <!-- CARD HEADER -->
+            <header class="card-header">
+              <div class="badge-class" contenteditable="true" title="點擊直接修改位階">ORIGIN LEGEND</div>
+              <div class="header-title-box">
+                <h1 class="card-title" id="cardName" contenteditable="true" title="點擊直接修改名稱">無敵麥克斯</h1>
+              </div>
+              <div class="card-hp-box">
+                <span class="hp-label">HP</span>
+                <span class="hp-value" id="cardHp" contenteditable="true" title="點擊直接修改HP">3000</span>
+              </div>
+              <div class="attr-symbol" id="cardAttr" title="核心屬性：光">光</div>
+            </header>
+
+            <!-- ILLUSTRATION ARTWORK -->
+            <div class="art-container" id="artContainer">
+              <!-- High-Res Game-Style Wizard Illustration (SVG Artwork) -->
+              <svg id="defaultArtSvg" viewBox="0 0 400 275" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <!-- Magic Aura & Background Radiance -->
+                  <radialGradient id="bgGlow" cx="50%" cy="45%" r="65%">
+                    <stop offset="0%" stop-color="#fff8cc" />
+                    <stop offset="25%" stop-color="#f5d061" stop-opacity="0.9" />
+                    <stop offset="55%" stop-color="#4a3108" stop-opacity="0.85" />
+                    <stop offset="100%" stop-color="#07080e" />
+                  </radialGradient>
+                  <!-- Celestial Robe Gradient -->
+                  <linearGradient id="robeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#ffffff" />
+                    <stop offset="25%" stop-color="#ffe680" />
+                    <stop offset="60%" stop-color="#a87c1c" />
+                    <stop offset="100%" stop-color="#2a1e05" />
+                  </linearGradient>
+                  <!-- Scepter Staff Glow -->
+                  <linearGradient id="staffGold" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#ffffff" />
+                    <stop offset="35%" stop-color="#ffd700" />
+                    <stop offset="100%" stop-color="#734d00" />
+                  </linearGradient>
+                  <!-- Magic Rune Filter -->
+                  <filter id="glowFilter" x="-30%" y="-30%" width="160%" height="160%">
+                    <feGaussianBlur stdDeviation="3.5" result="blur" />
+                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                  </filter>
+                </defs>
+
+                <!-- Deep Cosmic Space Background -->
+                <rect width="400" height="275" fill="url(#bgGlow)" />
+
+                <!-- Grand Magic Circle (Intricate Glyphs & Geometric Star) -->
+                <g transform="translate(200, 135)" filter="url(#glowFilter)">
+                  <!-- Outer Rune Ring -->
+                  <circle r="96" fill="none" stroke="#ffe270" stroke-width="1.8" opacity="0.8" />
+                  <circle r="90" fill="none" stroke="#fff" stroke-width="0.8" stroke-dasharray="4, 5" opacity="0.9" />
+                  <circle r="72" fill="none" stroke="#ffd043" stroke-width="1.2" opacity="0.7" />
+                  <!-- Sacred Star Hexagram / Octagram -->
+                  <polygon points="0,-88 62,62 -84,-26 84,-26 -62,62" fill="none" stroke="#fff7bd" stroke-width="1.2" opacity="0.6" />
+                  <polygon points="0,88 -62,-62 84,26 -84,26 62,-62" fill="none" stroke="#ffd54f" stroke-width="1.2" opacity="0.6" />
+                  <circle r="42" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.8" />
+                  <!-- Radiating Rays -->
+                  <line x1="0" y1="-96" x2="0" y2="96" stroke="#ffe680" stroke-width="1" opacity="0.5" />
+                  <line x1="-96" y1="0" x2="96" y2="0" stroke="#ffe680" stroke-width="1" opacity="0.5" />
+                  <line x1="-68" y1="-68" x2="68" y2="68" stroke="#ffe680" stroke-width="0.8" opacity="0.4" />
+                  <line x1="68" y1="-68" x2="-68" y2="68" stroke="#ffe680" stroke-width="0.8" opacity="0.4" />
+                </g>
+
+                <!-- Floating Radiant Magic Particles -->
+                <circle cx="95" cy="55" r="2.5" fill="#fff" filter="url(#glowFilter)" />
+                <circle cx="310" cy="70" r="3" fill="#ffeaa7" filter="url(#glowFilter)" />
+                <circle cx="65" cy="190" r="2" fill="#fff9d2" filter="url(#glowFilter)" />
+                <circle cx="335" cy="185" r="2.5" fill="#ffd700" filter="url(#glowFilter)" />
+                <circle cx="130" cy="110" r="1.5" fill="#fff" />
+                <circle cx="280" cy="115" r="1.8" fill="#fff" />
+
+                <!-- WIZARD: INVINCIBLE MAX (無敵麥克斯) CHARACTER SILHOUETTE & ROBES -->
+                <g id="wizardFigure">
+                  <!-- Flowing Shadow Cape -->
+                  <path d="M 125,275 Q 140,165 175,135 Q 200,120 225,135 Q 260,165 275,275 Z" fill="#130d1f" opacity="0.95" />
+                  
+                  <!-- Grand Celestial Golden Robes with Folds -->
+                  <path d="M 145,275 Q 160,180 185,150 L 215,150 Q 240,180 255,275 Q 200,285 145,275 Z" fill="url(#robeGrad)" stroke="#ffd700" stroke-width="1.2" />
+                  <!-- Gold Pauldron / Mantle Cloak -->
+                  <path d="M 155,160 Q 200,140 245,160 L 255,185 Q 200,165 145,185 Z" fill="url(#staffGold)" stroke="#fff" stroke-width="1" />
+                  <path d="M 175,155 L 200,175 L 225,155 L 200,195 Z" fill="#fff" filter="url(#glowFilter)" opacity="0.8" />
+
+                  <!-- High Magician Hood / Helm Shadow -->
+                  <path d="M 180,120 Q 200,90 220,120 Q 228,145 200,150 Q 172,145 180,120 Z" fill="#0b0814" stroke="#d4af37" stroke-width="1.5" />
+                  <!-- Glowing Piercing Golden Eyes of Arcane Light -->
+                  <ellipse cx="193" cy="122" rx="3.5" ry="1.8" fill="#ffffff" filter="url(#glowFilter)" />
+                  <ellipse cx="207" cy="122" rx="3.5" ry="1.8" fill="#ffffff" filter="url(#glowFilter)" />
+
+                  <!-- THE CELESTIAL SCEPTER (光之神權杖) -->
+                  <g id="scepter">
+                    <!-- Staff Shaft -->
+                    <line x1="262" y1="65" x2="235" y2="275" stroke="url(#staffGold)" stroke-width="4.5" stroke-linecap="round" />
+                    <line x1="262" y1="65" x2="235" y2="275" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round" />
+                    <!-- Scepter Head Arcane Ring & Prismatic Star Orb -->
+                    <circle cx="265" cy="58" r="18" fill="none" stroke="#ffe066" stroke-width="2.5" filter="url(#glowFilter)" />
+                    <polygon points="265,34 272,52 290,58 272,64 265,82 258,64 240,58 258,52" fill="#ffffff" filter="url(#glowFilter)" />
+                    <!-- Core Shining Nova -->
+                    <circle cx="265" cy="58" r="7" fill="#ffffff" filter="url(#glowFilter)" />
+                  </g>
+
+                  <!-- Left Hand Casting Divine Light Sphere -->
+                  <circle cx="140" cy="195" r="14" fill="#ffffff" filter="url(#glowFilter)" opacity="0.9" />
+                  <circle cx="140" cy="195" r="6" fill="#fff7cc" />
+                  <line x1="140" y1="172" x2="140" y2="218" stroke="#ffe066" stroke-width="1.5" filter="url(#glowFilter)" />
+                  <line x1="117" y1="195" x2="163" y2="195" stroke="#ffe066" stroke-width="1.5" filter="url(#glowFilter)" />
+                </g>
+              </svg>
+              <!-- Uploaded custom image element (hidden by default) -->
+              <img id="customArtImg" src="" alt="自訂立繪" style="display: none;" />
+              <div class="art-frame-gold-accent"></div>
+            </div>
+
+            <!-- SUB-BAR / TYPE -->
+            <div class="art-sub-bar">
+              <span contenteditable="true" title="點擊修改卡牌類別">[ 魔法師族 / 傳奇 / 效果 ]</span>
+              <span contenteditable="true" title="點擊修改身分識別">SECRET AURA MAGUS</span>
+            </div>
+
+            <!-- ABILITY SECTION -->
+            <section class="abilities-section">
+              
+              <!-- PASSIVE TRAIT -->
+              <div class="trait-box">
+                <div class="trait-header">
+                  <span class="trait-badge">特性</span>
+                  <span class="trait-name" id="traitName" contenteditable="true" title="點擊直接編輯特性名稱">光輝魔導</span>
+                </div>
+                <div class="trait-desc" id="traitDesc" contenteditable="true" title="點擊直接編輯特性說明">
+                  每回合第一次受到攻擊時降低部分傷害，並獲得短暫的光屬性強化。
+                </div>
+              </div>
+
+              <!-- SKILL 1 -->
+              <div class="skill-card">
+                <div class="skill-top">
+                  <div class="energy-cost">
+                    <span class="energy-orb" title="光能量"></span>
+                    <span class="energy-orb" title="光能量"></span>
+                  </div>
+                  <div class="skill-name" id="skill1Name" contenteditable="true" title="點擊編輯招式一">聖光爆裂</div>
+                  <div class="skill-dmg" id="skill1Dmg" contenteditable="true" title="點擊編輯傷害">1800</div>
+                </div>
+                <div class="skill-desc" id="skill1Desc" contenteditable="true" title="點擊編輯說明">
+                  凝聚光之魔法並向敵人釋放強力攻擊。
+                </div>
+              </div>
+
+              <!-- ULTIMATE SKILL -->
+              <div class="skill-card ultimate-skill">
+                <div class="skill-top">
+                  <div class="energy-cost">
+                    <span class="energy-orb" title="光能量"></span>
+                    <span class="energy-orb" title="光能量"></span>
+                    <span class="energy-orb" title="光能量"></span>
+                    <span class="energy-orb" title="光能量"></span>
+                    <span class="energy-orb" title="光能量"></span>
+                  </div>
+                  <div class="skill-name" id="skill2Name" contenteditable="true" title="點擊編輯奧義招式">無限星輝・終焉神判</div>
+                  <div class="skill-dmg" id="skill2Dmg" contenteditable="true" title="點擊編輯奧義傷害">3000</div>
+                </div>
+                <div class="skill-desc" id="skill2Desc" contenteditable="true" title="點擊編輯奧義說明">
+                  召喚巨大的光之魔法陣，釋放終極光束造成毀滅性攻擊。
+                </div>
+              </div>
+
+            </section>
+
+            <!-- MECHANICS ROW (WEAKNESS, RESISTANCE, RETREAT) -->
+            <div class="card-mechanics">
+              <div class="mech-item">
+                <span class="mech-label">弱點</span>
+                <span class="mech-val" id="cardWeakness" contenteditable="true" title="點擊修改弱點">闇 ×2</span>
+              </div>
+              <div class="mech-item">
+                <span class="mech-label">抗性</span>
+                <span class="mech-val" id="cardResistance" contenteditable="true" title="點擊修改抗性">光 -30</span>
+              </div>
+              <div class="mech-item">
+                <span class="mech-label">調度成本</span>
+                <span class="mech-val" id="cardRetreat" contenteditable="true" title="點擊修改調度成本">◆ ◆ (2)</span>
+              </div>
+            </div>
+
+            <!-- FOOTER LEGAL & HOLOGRAM STAMP -->
+            <footer class="card-footer">
+              <div class="footer-left">
+                <div contenteditable="true" id="cardIllus" title="點擊修改繪師署名">Illus. Max</div>
+                <div contenteditable="true" id="cardSerial" title="點擊修改卡號與稀有度">No. 001/001 ★★★ SAR</div>
+                <div contenteditable="true" id="cardCopyright" title="點擊修改版權資訊">© 2026 Max</div>
+              </div>
+              <div class="holo-security-seal" title="官方正品防偽全息印記"></div>
+            </footer>
+
+          </div>
+
+          <!-- BACK FACE -->
+          <div class="card-face card-back">
+            <div class="back-emblem-wrap">
+              <div class="back-circle c1"></div>
+              <div class="back-circle c2"></div>
+              <div class="back-circle c3"></div>
+              <svg width="60" height="60" viewBox="0 0 100 100" fill="none">
+                <polygon points="50,5 95,50 50,95 5,50" stroke="#f5d061" stroke-width="3" fill="rgba(245, 208, 97, 0.15)" />
+                <circle cx="50" cy="50" r="18" fill="#fff" />
+                <circle cx="50" cy="50" r="26" stroke="#f5d061" stroke-width="2" stroke-dasharray="4,4" />
+              </svg>
+            </div>
+            <div class="back-title">LEGENDARY TCG</div>
+            <div class="back-sub">AUTHENTIC COLLECTIBLE</div>
+          </div>
+
+          <!-- FOIL & GLARE OVERLAYS -->
+          <div class="holo-foil-layer" id="holoFoil"></div>
+          <div class="glare-layer" id="glareLayer"></div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: FROSTED GLASS CONTROL PANEL -->
+    <aside class="control-panel">
+      
+      <div class="panel-header">
+        <h2 class="panel-title">
+          <span>✨</span>
+          <span>傳奇卡牌工坊控制器</span>
+        </h2>
+        <p class="panel-subtitle">即時 3D 鐳射箔膜切換、立繪抽換與高解析卡牌匯出</p>
+      </div>
+
+      <!-- Holographic Foil Style Selection -->
+      <div class="control-group">
+        <label class="group-label">
+          <span>鐳射箔膜風格 (Holographic Foil)</span>
+          <span id="currentFoilLabel" style="color: var(--gold-primary);">Gold Ultra 黑金浮雕</span>
+        </label>
+        <div class="foil-style-grid">
+          <button type="button" class="btn-foil active" data-style="style-gold-ultra">
+            <span class="foil-indicator ind-gold"></span>
+            <span>Gold Ultra 黑金浮雕</span>
+          </button>
+          <button type="button" class="btn-foil" data-style="style-cosmos">
+            <span class="foil-indicator ind-cosmos"></span>
+            <span>Cosmos Holo 宇宙彩虹</span>
+          </button>
+          <button type="button" class="btn-foil" data-style="style-rainbow">
+            <span class="foil-indicator ind-rainbow"></span>
+            <span>Rainbow Secret 極光全息</span>
+          </button>
+          <button type="button" class="btn-foil" data-style="style-silver">
+            <span class="foil-indicator ind-silver"></span>
+            <span>Silver Phantom 冷冽銀鏡</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Sliders for Foil Intensity & Glare -->
+      <div class="control-group">
+        <div class="group-label">
+          <span>全息反光強度</span>
+          <span class="slider-val" id="valFoil">85%</span>
+        </div>
+        <div class="slider-row">
+          <input type="range" class="custom-range" id="rangeFoil" min="0" max="100" value="85">
+        </div>
+      </div>
+
+      <div class="control-group">
+        <div class="group-label">
+          <span>光斑反射 (Glare)</span>
+          <span class="slider-val" id="valGlare">35%</span>
+        </div>
+        <div class="slider-row">
+          <input type="range" class="custom-range" id="rangeGlare" min="0" max="100" value="35">
+        </div>
+      </div>
+
+      <!-- Card Display Operations -->
+      <div class="control-group">
+        <label class="group-label">3D 視差與互動模式</label>
+        <div class="action-row">
+          <button type="button" class="btn-action" id="btnFlipCard">
+            <span>🔄</span> 3D 翻轉卡背
+          </button>
+          <button type="button" class="btn-action" id="btnAutoShowcase">
+            <span>🎡</span> 自動全息巡航
+          </button>
+          <button type="button" class="btn-action" id="btnGyroscope">
+            <span>📱</span> 啟用陀螺儀傾斜
+          </button>
+          <button type="button" class="btn-action" id="btnResetView">
+            <span>🎯</span> 重置卡牌視角
+          </button>
+        </div>
+      </div>
+
+      <!-- Custom Artwork Upload & Reset -->
+      <div class="control-group">
+        <label class="group-label">自訂卡牌立繪</label>
+        <input type="file" id="fileArtUpload" accept="image/*" style="display: none;">
+        <div class="action-row">
+          <button type="button" class="btn-action" id="btnTriggerUpload">
+            <span>🖼️</span> 上傳本機立繪圖片
+          </button>
+          <button type="button" class="btn-action" id="btnRestoreDefaultArt">
+            <span>🪄</span> 恢復預設神導立繪
+          </button>
+        </div>
+      </div>
+
+      <!-- Export Button -->
+      <div class="action-row">
+        <button type="button" class="btn-action btn-primary-action" id="btnExportPng">
+          <span>⚡</span> 一鍵匯出高解析度 PNG 卡牌
+        </button>
+      </div>
+
+      <!-- Tips Box -->
+      <div class="tips-box">
+        💡 <strong>互動小提示：</strong><br>
+        1. <strong>可直接編輯文字</strong>：卡名、HP、招式數值、效果與版權皆可點擊直接修改！<br>
+        2. <strong>游標/手指觸控</strong>：在卡面上滑動即可驅動 3D 視差傾角與折射光芒。<br>
+        3. <strong>一鍵匯出</strong>：點擊上方金色按鈕即可自動截取專屬高解析度卡牌收藏圖！
+      </div>
+
+    </aside>
+
+  </main>
+
+  <script>
+    /* =========================================================
+       3D PARALLAX & HOLOGRAPHIC FOIL INTERACTION ENGINE
+       ========================================================= */
+    const scene = document.getElementById('cardScene');
+    const card = document.getElementById('card3D');
+    const root = document.documentElement;
+    const body = document.body;
+
+    let isHovered = false;
+    let isFlipped = false;
+    let isAutoShowcase = false;
+    let showcaseAngle = 0;
+    let showcaseAnimId = null;
+
+    // Center coordinates cache
+    let bounds = null;
+
+    function updateBounds() {
+      bounds = scene.getBoundingClientRect();
+    }
+    window.addEventListener('resize', updateBounds);
+    window.addEventListener('scroll', updateBounds);
+    updateBounds();
+
+    // Calculate 3D tilt & foil angle based on coordinates (clientX, clientY)
+    function handlePointerMove(clientX, clientY) {
+      if (!bounds) updateBounds();
+
+      const x = clientX - bounds.left;
+      const y = clientY - bounds.top;
+
+      const px = Math.max(0, Math.min(1, x / bounds.width));
+      const py = Math.max(0, Math.min(1, y / bounds.height));
+
+      // Calculate tilt angles (-18deg to +18deg)
+      const rx = (py - 0.5) * -34;
+      const ry = (px - 0.5) * 34;
+
+      // Calculate light angle & gradient position
+      const rad = Math.atan2(y - bounds.height / 2, x - bounds.width / 2);
+      const deg = (rad * (180 / Math.PI) + 180 + 90) % 360;
+
+      card.classList.remove('smooth-return');
+      root.style.setProperty('--rx', `${rx.toFixed(2)}deg`);
+      root.style.setProperty('--ry', `${ry.toFixed(2)}deg`);
+      root.style.setProperty('--mx', `${(px * 100).toFixed(1)}%`);
+      root.style.setProperty('--my', `${(py * 100).toFixed(1)}%`);
+      root.style.setProperty('--foil-angle', `${deg.toFixed(1)}deg`);
+    }
+
+    // Smooth return on pointer leave
+    function resetCardTilt() {
+      if (isAutoShowcase) return;
+      card.classList.add('smooth-return');
+      root.style.setProperty('--rx', '0deg');
+      root.style.setProperty('--ry', '0deg');
+      root.style.setProperty('--mx', '50%');
+      root.style.setProperty('--my', '50%');
+      root.style.setProperty('--foil-angle', '135deg');
+    }
+
+    // Pointer / Mouse events
+    scene.addEventListener('pointerenter', () => {
+      isHovered = true;
+      updateBounds();
+      if (isAutoShowcase) stopShowcase();
+    });
+
+    scene.addEventListener('pointermove', (e) => {
+      handlePointerMove(e.clientX, e.clientY);
+    });
+
+    scene.addEventListener('pointerleave', () => {
+      isHovered = false;
+      resetCardTilt();
+    });
+
+    // Mobile Touch Gesture Support
+    scene.addEventListener('touchmove', (e) => {
+      if (e.touches.length > 0) {
+        const touch = e.touches[0];
+        handlePointerMove(touch.clientX, touch.clientY);
+      }
+    }, { passive: true });
+
+    scene.addEventListener('touchend', () => {
+      resetCardTilt();
+    });
+
+    /* =========================================================
+       AUTO SHOWCASE ANIMATION (巡航模式)
+       ========================================================= */
+    const btnAutoShowcase = document.getElementById('btnAutoShowcase');
+
+    function animateShowcase() {
+      showcaseAngle += 0.035;
+      const rx = Math.sin(showcaseAngle) * 16;
+      const ry = Math.cos(showcaseAngle * 0.8) * 18;
+      const mx = 50 + Math.cos(showcaseAngle) * 35;
+      const my = 50 + Math.sin(showcaseAngle * 1.2) * 35;
+      const foilAngle = (showcaseAngle * (180 / Math.PI)) % 360;
+
+      root.style.setProperty('--rx', `${rx.toFixed(2)}deg`);
+      root.style.setProperty('--ry', `${ry.toFixed(2)}deg`);
+      root.style.setProperty('--mx', `${mx.toFixed(1)}%`);
+      root.style.setProperty('--my', `${my.toFixed(1)}%`);
+      root.style.setProperty('--foil-angle', `${foilAngle.toFixed(1)}deg`);
+
+      showcaseAnimId = requestAnimationFrame(animateShowcase);
+    }
+
+    function startShowcase() {
+      isAutoShowcase = true;
+      card.classList.remove('smooth-return');
+      btnAutoShowcase.style.borderColor = 'var(--gold-primary)';
+      btnAutoShowcase.style.color = 'var(--gold-light)';
+      btnAutoShowcase.innerHTML = '<span>⏸️</span> 暫停全息巡航';
+      showcaseAnimId = requestAnimationFrame(animateShowcase);
+    }
+
+    function stopShowcase() {
+      isAutoShowcase = false;
+      if (showcaseAnimId) cancelAnimationFrame(showcaseAnimId);
+      btnAutoShowcase.style.borderColor = '';
+      btnAutoShowcase.style.color = '';
+      btnAutoShowcase.innerHTML = '<span>🎡</span> 自動全息巡航';
+      resetCardTilt();
+    }
+
+    btnAutoShowcase.addEventListener('click', () => {
+      if (isAutoShowcase) {
+        stopShowcase();
+      } else {
+        startShowcase();
+      }
+    });
+
+    /* =========================================================
+       CARD 180° 3D FLIP (正面 / 背面翻轉)
+       ========================================================= */
+    const btnFlipCard = document.getElementById('btnFlipCard');
+    btnFlipCard.addEventListener('click', () => {
+      isFlipped = !isFlipped;
+      card.classList.toggle('flipped', isFlipped);
+      btnFlipCard.innerHTML = isFlipped ? '<span>🔄</span> 翻回卡牌正面' : '<span>🔄</span> 3D 翻轉卡背';
+    });
+
+    const btnResetView = document.getElementById('btnResetView');
+    btnResetView.addEventListener('click', () => {
+      stopShowcase();
+      if (isFlipped) {
+        isFlipped = false;
+        card.classList.remove('flipped');
+        btnFlipCard.innerHTML = '<span>🔄</span> 3D 翻轉卡背';
+      }
+      resetCardTilt();
+    });
+
+    /* =========================================================
+       FOIL STYLE SELECTOR (4 種全息風格切換)
+       ========================================================= */
+    const foilButtons = document.querySelectorAll('.btn-foil');
+    const currentFoilLabel = document.getElementById('currentFoilLabel');
+    const foilLabels = {
+      'style-gold-ultra': 'Gold Ultra 黑金浮雕',
+      'style-cosmos': 'Cosmos Holo 宇宙彩虹',
+      'style-rainbow': 'Rainbow Secret 極光全息',
+      'style-silver': 'Silver Phantom 冷冽銀鏡'
+    };
+
+    foilButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        foilButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const styleClass = btn.getAttribute('data-style');
+        body.className = styleClass;
+        currentFoilLabel.textContent = foilLabels[styleClass];
+      });
+    });
+
+    /* =========================================================
+       INTENSITY & GLARE SLIDERS
+       ========================================================= */
+    const rangeFoil = document.getElementById('rangeFoil');
+    const valFoil = document.getElementById('valFoil');
+    rangeFoil.addEventListener('input', (e) => {
+      const val = e.target.value;
+      valFoil.textContent = `${val}%`;
+      root.style.setProperty('--foil-opacity', (val / 100).toFixed(2));
+    });
+
+    const rangeGlare = document.getElementById('rangeGlare');
+    const valGlare = document.getElementById('valGlare');
+    rangeGlare.addEventListener('input', (e) => {
+      const val = e.target.value;
+      valGlare.textContent = `${val}%`;
+      root.style.setProperty('--glare-opacity', (val / 100).toFixed(2));
+    });
+
+    /* =========================================================
+       DEVICE GYROSCOPE (行動裝置陀螺儀感應)
+       ========================================================= */
+    const btnGyroscope = document.getElementById('btnGyroscope');
+    let gyroActive = false;
+
+    function handleOrientation(event) {
+      if (!gyroActive) return;
+      const gamma = event.gamma || 0; // Left-to-Right (-90 to 90)
+      const beta = event.beta || 0;   // Front-to-Back (-180 to 180)
+
+      // Clamp tilts within comfortable ranges
+      const rx = Math.max(-25, Math.min(25, (beta - 45) * 0.8));
+      const ry = Math.max(-25, Math.min(25, gamma * 0.8));
+
+      const px = (ry + 25) / 50;
+      const py = (rx + 25) / 50;
+      const deg = (Math.atan2(rx, ry) * (180 / Math.PI) + 360) % 360;
+
+      root.style.setProperty('--rx', `${-rx.toFixed(2)}deg`);
+      root.style.setProperty('--ry', `${ry.toFixed(2)}deg`);
+      root.style.setProperty('--mx', `${(px * 100).toFixed(1)}%`);
+      root.style.setProperty('--my', `${(py * 100).toFixed(1)}%`);
+      root.style.setProperty('--foil-angle', `${deg.toFixed(1)}deg`);
+    }
+
+    btnGyroscope.addEventListener('click', async () => {
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        try {
+          const permission = await DeviceOrientationEvent.requestPermission();
+          if (permission === 'granted') {
+            enableGyro();
+          } else {
+            alert('未取得陀螺儀存取權限。');
+          }
+        } catch (err) {
+          console.error(err);
+          alert('啟用陀螺儀時發生錯誤。');
+        }
+      } else if ('ondeviceorientation' in window) {
+        enableGyro();
+      } else {
+        alert('此裝置或瀏覽器不支援陀螺儀感應。');
+      }
+    });
+
+    function enableGyro() {
+      if (!gyroActive) {
+        window.addEventListener('deviceorientation', handleOrientation);
+        gyroActive = true;
+        btnGyroscope.style.borderColor = 'var(--gold-primary)';
+        btnGyroscope.style.color = 'var(--gold-light)';
+        btnGyroscope.innerHTML = '<span>📱</span> 陀螺儀已啟用';
+      } else {
+        window.removeEventListener('deviceorientation', handleOrientation);
+        gyroActive = false;
+        btnGyroscope.style.borderColor = '';
+        btnGyroscope.style.color = '';
+        btnGyroscope.innerHTML = '<span>📱</span> 啟用陀螺儀傾斜';
+        resetCardTilt();
+      }
+    }
+
+    /* =========================================================
+       CUSTOM ARTWORK UPLOAD (FileReader API)
+       ========================================================= */
+    const fileArtUpload = document.getElementById('fileArtUpload');
+    const btnTriggerUpload = document.getElementById('btnTriggerUpload');
+    const btnRestoreDefaultArt = document.getElementById('btnRestoreDefaultArt');
+    const defaultArtSvg = document.getElementById('defaultArtSvg');
+    const customArtImg = document.getElementById('customArtImg');
+
+    btnTriggerUpload.addEventListener('click', () => {
+      fileArtUpload.click();
+    });
+
+    fileArtUpload.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          customArtImg.src = event.target.result;
+          customArtImg.style.display = 'block';
+          defaultArtSvg.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    btnRestoreDefaultArt.addEventListener('click', () => {
+      customArtImg.style.display = 'none';
+      customArtImg.src = '';
+      defaultArtSvg.style.display = 'block';
+      fileArtUpload.value = '';
+    });
+
+    /* =========================================================
+       EXPORT HIGH-RES CARD PNG (html2canvas)
+       ========================================================= */
+    const btnExportPng = document.getElementById('btnExportPng');
+    const cardFrontTarget = document.getElementById('cardFrontTarget');
+
+    btnExportPng.addEventListener('click', async () => {
+      stopShowcase();
+      
+      // Temporary UI Loading feedback
+      const originalText = btnExportPng.innerHTML;
+      btnExportPng.innerHTML = '<span>⏳</span> 正在渲染超高解析度卡牌...';
+      btnExportPng.disabled = true;
+
+      // Ensure card is facing forward for clean snapshot
+      const wasFlipped = isFlipped;
+      if (wasFlipped) {
+        card.classList.remove('flipped');
+      }
+
+      // Temporarily flatten 3D transform for pixel-perfect render
+      const prevRx = root.style.getPropertyValue('--rx');
+      const prevRy = root.style.getPropertyValue('--ry');
+      root.style.setProperty('--rx', '0deg');
+      root.style.setProperty('--ry', '0deg');
+
+      try {
+        // Wait 150ms for DOM layout stabilization
+        await new Promise(r => setTimeout(r, 150));
+
+        const canvas = await html2canvas(cardFrontTarget, {
+          scale: 3, // 3x ultra-sharp resolution
+          useCORS: true,
+          backgroundColor: null,
+          logging: false
+        });
+
+        // Convert canvas to download link
+        const imgData = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.download = '無敵麥克斯_ORIGIN_LEGEND_SAR.png';
+        link.href = imgData;
+        link.click();
+      } catch (err) {
+        console.error('PNG Export failed:', err);
+        alert('匯出卡牌時發生問題，請稍後重試。');
+      } finally {
+        // Restore state
+        root.style.setProperty('--rx', prevRx);
+        root.style.setProperty('--ry', prevRy);
+        if (wasFlipped) {
+          card.classList.add('flipped');
+        }
+        btnExportPng.innerHTML = originalText;
+        btnExportPng.disabled = false;
+      }
+    });
+
+  </script>
+</body>
+</html>
